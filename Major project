@@ -1,0 +1,214 @@
+# importing libraries:
+import warnings 
+warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+import os
+import joblib
+from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix, accuracy_score
+dataset = pd.read_csv("dataset.csv")dataset.head()
+format_str = '%Y/%m/%d %H:%M’dataset['TimeTag'] = pd.to_datetime(dataset['TimeTag'], format=format_str)
+# Extract date, time, month, hour, minute, and day into  separate columnsdataset['Month'] = dataset['TimeTag’].dt.month
+dataset[‘Hour’]=dataset[‘TimeTag’].dt.hour
+dataset['Minute'] = dataset['TimeTag'].dt.minute
+dataset['Day'] = dataset['TimeTag'].dt.day
+dataset['Year'] = dataset['TimeTag'].dt.year
+dataset[‘Second’]=dataset[‘TimeTag’].dt.year# Drop the original "DateTime" column if not needed anymore
+dataset.drop(columns=['TimeTag'], inplace=True)
+Data Preprocessing
+dataset.head()
+dataset.shape
+dataset.info()
+dataset.describe()dataset.nunique()
+# checking null values:dataset.isnull().sum()
+# checking duplicate values:dataset.duplicated().sum()
+# dropping duplicates:
+dataset.drop_duplicates(inplace=True)
+# rechecking duplicate values:
+dataset.duplicated().sum()
+Create a count plot
+sns.set(style="darkgrid")  # Set the style of the plot
+plt.figure(figsize=(8, 6))  # Set the figure size
+ax = sns.countplot(x='Label', data=dataset)
+plt.title("Count Plot")  # Add a title to the plot
+plt.xlabel("Categories")  # Add label to x-axis
+plt.xticks(rotation=90)
+# Annotate each bar with its count valuefor p in ax.patches:
+ax.annotate(f'{p.get_height()}', (p.get_x() + p.get_width() / 2., p.get_height()), 
+ha='center', va=‘center', fontsize=10, color='black', xytext=(0, 5),                
+textcoords='offset points')
+
+plt.show()  # Display the plot
+labels = dataset['Label'].unique()
+labels
+converting categorical data into numerical data:
+le = LabelEncoder()
+dataset['Label']=le.fit_transform(dataset['Label'])
+x and y variable separation:
+y = dataset.iloc[:,0]
+y
+x = dataset.drop('Label',axis=1)
+x
+ 
+ Train,test and splitting of dataset
+  x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2,random_state=42)
+x_train.shape
+y_train.shape
+x_test.shape
+y_test.shape
+Building a ML Model
+precision = []
+recall = []
+fscore = []
+accuracy = []
+#function to calculate various metrics such as accuracy, precision etc
+def calculateMetrics(algorithm, testY,predict):
+    testY = testY.astype('int')
+    predict = predict.astype('int')
+    p = precision_score(testY, predict,average='macro') * 100
+    r = recall_score(testY, predict,average='macro') * 100
+    f = f1_score(testY, predict,average='macro') * 100
+    a = accuracy_score(testY,predict)*100 
+accuracy.append(a)
+precision.append(p)
+recall.append(r)
+fscore.append(f)
+print(algorithm+' Accuracy    : '+str(a))
+print(algorithm+' Precision   : '+str(p))
+print(algorithm+' Recall      : '+str(r))
+print(algorithm+' FSCORE      : '+str(f))
+report=classification_report(predict, testY,target_names=labels)
+print('\n',algorithm+" classification report\n",report)
+conf_matrix = confusion_matrix(testY, predict) 
+plt.figure(figsize =(5, 5)) 
+ax = sns.heatmap(conf_matrix, xticklabels = labels, yticklabels = labels, annot = True, cmap="Blues" ,fmt ="g");
+ax.set_ylim([0,len(labels)])
+plt.title(algorithm+" Confusion matrix") 
+plt.ylabel('True class') 
+plt.xlabel('Predicted class') 
+plt.show()
+Knn Algorithm:
+if os.path.exists('KNeighborsClassifier.pkl'):
+    #load the model:
+    knn=joblib.load('KNeighborsClassifier.pkl')
+    print('model loaded successfully')
+    predict=knn.predict(x_test)
+    calculateMetrics("KNeighborsClassifier",predict,y_test)
+else:
+    #train the model:
+    knn=KNeighborsClassifier()
+    knn.fit(x_train,y_train)
+    #saving model:
+    joblib.dump(knn,'KNeighborsClassifier.pkl')
+    print('model saved successfully')
+    predict=knn.predict(x_test)
+    calculateMetrics("KNeighborsClassifier",predict,y_test)
+Knn Algorithm:
+if os.path.exists('KNeighborsClassifier.pkl'):
+    #load the model:
+    knn=joblib.load('KNeighborsClassifier.pkl')
+    print('model loaded successfully')
+    predict=knn.predict(x_test)
+    calculateMetrics("KNeighborsClassifier",predict,y_test)
+else:
+    #train the model:
+    knn=KNeighborsClassifier()
+    knn.fit(x_train,y_train)
+    #saving model:
+    joblib.dump(knn,'KNeighborsClassifier.pkl')
+    print('model saved successfully')
+    predict=knn.predict(x_test)
+    calculateMetrics("KNeighborsClassifier",predict,y_test)
+Performance Values
+columns = ["Algorithm Name","Precison","Recall","FScore","Accuracy"]
+values = []
+algorithm_names = ["knn Classifier",'Extra Tree Classifier']
+for i in range(len(algorithm_names)):
+    values.append([algorithm_names[i],precision[i],recall[i],fscore[i],accuracy[i]])
+    
+temp = pd.DataFrame(values,columns=columns)
+temp
+algorithm_names = ["knn Classifier",'Extra Tree Classifier']
+for i in range(len(algorithm_names)):
+    values.append([algorithm_names[i],precision[i],recall[i],fscore[i],accuracy[i]])
+    
+temp = pd.DataFrame(values,columns=columns)
+temp
+Test Dataset:
+test=pd.read_csv("test.csv")
+test
+format_str = '%Y/%m/%d %H:%M'test['TimeTag'] = pd.to_datetime(test['TimeTag'], format=format_str)# Extract date, time, month, hour, minute, and day into separate columnstest['Month'] = test['TimeTag'].dt.month
+test['Hour'] = test['TimeTag'].dt.hour
+test['Minute'] = test['TimeTag'].dt.minute
+test['Day'] = test['TimeTag'].dt.day
+test['Year'] = test['TimeTag'].dt.year
+test['Second']=test['TimeTag'].dt.second
+# Drop the original "DateTime" column if not needed anymore
+test.drop(columns=['TimeTag'], inplace=True)
+test.head()
+labels
+# Make predictions on the selected test data
+predict = ex.predict(test)
+# Loop through each prediction and print the corresponding row
+for i, p in enumerate(predict):
+    if p == 0:
+        print(test.iloc[i])
+        print("Row {}:*************************************Core Broken Level 1 ".format(i))
+    elif p==1:
+        print(test.iloc[i])
+        print("Row {}:*************************************Insufficient Lubrication Level 2".format(i))
+    elif p==2:
+        print(test.iloc[i])
+        print("Row {}:*************************************Cavity Block Level 1".format(i))
+  elif p==3:
+        print(test.iloc[i])
+        print("Row {}:******************************************Cavity Block Level 2".format(i))
+    elif p==4:
+        print(test.iloc[i])
+        print("Row {}:******************************************Cavity Block Level 3".format(i))
+    elif p==5:
+        print(test.iloc[i])
+        print("Row {}:******************************************Core Broken Level 2".format(i))
+    elif p==6:
+        print(test.iloc[i])
+        print("Row {}:******************************************Core Broken Level 3".format(i))
+    elif p==7:
+        print(test.iloc[i])
+        print("Row {}:******************************************Normal".format(i))
+    elif p==8:
+        print(test.iloc[i])
+        print("Row {}:*************************************Insufficient Lubrication Level 1".format(i))
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
